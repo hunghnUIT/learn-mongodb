@@ -149,7 +149,7 @@ db.posts.find({tags: {$all: ["tech", "new"]}})
 db.posts.find({like: {$gt: 12}}, {tags: {$elemMatch: {$eq: "tech"}}})
 ```
 and the result will look like:
-``` json
+``` sql
 { "_id" : ObjectId("5f5f3f52e9522dfdab884f6c"), "tags" : [ "tech" ] }
 { "_id" : ObjectId("5f64638adff26b47940f06d6") }
 ```
@@ -160,7 +160,7 @@ and the result will look like:
 db.posts.find({tags: {$eq: "new"}}, {"tags.$":1})
 ```
 and the result will look like:
-``` json
+``` sql
 { "_id" : ObjectId("5f5f3f52e9522dfdab884f6c"), "tags" : [ "new" ] }
 { "_id" : ObjectId("5f64638adff26b47940f06d6"), "tags" : [ "new" ] }
 ```
@@ -169,7 +169,7 @@ and the result will look like:
 db.posts.find({tags: {$all: ["tech", "new"]}}, {"tags.$":1})
 ```
 will return the result looked like:
-``` json
+``` sql
 { "_id" : ObjectId("5f5f3f52e9522dfdab884f6c"), "tags" : [ "new" ] }
 
 // object 5f64638adff26b47940f06d6 doesn't have "tech" in tags
