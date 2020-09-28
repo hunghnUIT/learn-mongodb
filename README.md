@@ -34,7 +34,6 @@ posts {
         ]
 }
 ```
-***
 ## Create method
 * *Create many `posts`:*
 
@@ -61,7 +60,6 @@ db.posts.insertMany([
 ], { ordered: false })
 ```
 and an *duplicate error* will still be raised but all posts which aren't duplicate are inserted. 
-***
 
 ## Read method.
 
@@ -136,6 +134,12 @@ db.posts.find().skip(10).limit(5).sort({likes: 1, create: -1})
 db.posts.find({tags: {$all: ["tech", "new"]}})
 ```
 
+* *Find `posts` having it's title include "my"? :*
+``` SQL
+db.posts.find({title: {$regex : /my/i}})
+// i is the flag for case sensitivity.
+```
+
 * ***Projection in MongoDB:***
 
 *Definition:*
@@ -182,7 +186,6 @@ will return the result looked like:
 
 > "The `$` operator projects the first matching array element from each document in a collection based on some condition from the query statement."
 * *A little note above is worth to keep in mind.*
-***
 
 ## Update method.
 * *Update field's value:*
@@ -265,7 +268,6 @@ db.collection.updateOne(
 ```
 ***NOTE:*** *If you work more on array, you should learn how to use arrayFilter*
 
-***
 ## Delete Method.
 * *Removing documents with more than 2 conditions:*
 ```sql
@@ -277,14 +279,59 @@ db.collection.deleteMany(
 )
 ```
 
-## Advanced things.
-* *Indexes in MongoDB:* 
+# Advanced things.
+## Indexes in MongoDB.
 
-**Note 1:** Threshold for memory in MongoDB is 32 megabytes for sorting, in case of large documents, having `index` is a smart way to low the usage of memory for sorting because Mongo take all docs in it's own memory and sort elements in there. 
+***Note 0:*** A collection has it's own `_id` field as it's default `index`. A collection can have many `indexes`.
 
-**Note 2:** Using `index` having lots of benefits such as the fastest way to query or helping to reduce the usage of memories indicated above. However, it's important to use `index` at the right time and in the right place. 
-For example: Looking for a `post` with it's title, collection should be create `index` with field `title` BUT looking for a `post` which having `create` before 07/29/2020 and having more than 10 `like` then `index` should be create on field `create`
+***Note 1:*** Threshold for memory in MongoDB is 32 megabytes for sorting, in case of large documents, having `index` is a smart way to low the usage of memory for sorting because Mongo take all docs in it's own memory and sort elements in there. 
 
-**Note 3:** Create `index` on every single field will give us super fast query but it costs much more time whenever insert/update documents due to the creation/update of `index` for every field in the document.
+***Note 2:*** Using `index` having lots of benefits such as the fastest way to query or helping to reduce the usage of memories indicated above. However, it's important to use `index` at the right time and in the right place. 
+For example: Looking for a `post` with it's title, collection should be create `index` with field `title` but looking for a `post` which having `create` before 07/29/2020 and having more than 10 `like` then `index` should be create on field `create`
 
-**Note 4:** `index` are unique. If a field was nominated to be index, null/empty/not exist is still a value, which mean if two documents both having null/empty/not exist value for nominated field would raise a `duplicate error`.
+***Note 3:*** Create `index` on every single field will give us super fast query but it costs much more time whenever insert/update documents due to the creation/update of `index` for every field in the document.
+
+***Note 4:*** if `index` are set to be unique. If a field was nominated to be index, null/empty/not exist is still a value, which mean if two documents both having null/empty/not exist value for *nominated field* would raise a `duplicate error`. But we can deal with this with `partialFilterExpression`.
+```sql
+// partialFilterExpression will check duplicate if the field indicated exists 
+db.post.createIndex(
+        {email:1}, 
+        {
+                unique: true, partialFilterExpression: {
+                        email: {$exists: true}
+                }
+        }
+)
+```
+
+## Explain() method.
+* *"queryPlanner":* Show summary for the Executed Query and Winning plan 
+
+* *"executionStats":* Show detailed summary for Executed Query, Winning Plan and Possibly Rejected Plans.
+
+* *"allPlansExecution":* Show detailed summary for Executed Query, Winning Plan and Winning Plan Decision Process.
+
+***Note 1:*** If *only indexes fields* returned and also filtering on those fields, `totalDocsExamined` will be `0`, only `totalKeysExamined` will equal to the returned result length, that mean this is a *efficient* querying. For example: 
+```sql
+// Create index on "title" with ascending order
+db.posts.createIndex({title:1}) 
+
+db.posts.explain("executionStats")
+        .find({title: {$regex : /^my/i}}, {_id: 0, title: 1}
+)
+/*
+"executionStats" : {
+                "executionSuccess" : true,
+                "nReturned" : 2,
+                "executionTimeMillis" : 0,
+                "totalKeysExamined" : 2,
+                "totalDocsExamined" : 0,
+                ...
+}
+*/
+```
+
+***Note 2:*** Create `index` will block every actions to the DB because Mongo uses the *foreground by default*. If don't want to, use option `{background: true}` and create `index` will be executed on the background but it's a *slower execution* compare with foreground. For example: 
+```sql
+db.posts.createIndex({title:1}, {background: true}) 
+```
