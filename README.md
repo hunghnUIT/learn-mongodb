@@ -3,7 +3,7 @@
 ##Structure
 *Assume we have a DB `blog` and collections `posts` and `comments` data structure look like:*
 
-``` json
+``` sql
 posts {
     "_id" : ObjectId("5f5f3f52e9522dfdab884f6c"),
         "title" : "My first post!",
@@ -12,24 +12,24 @@ posts {
                 "new",
                 "tech"
         ],
-        create: 2020-07-29T13:17:08.868+00:00,
-        update: 2020-07-29T13:17:08.868+00:00,
-        likes: 12, 
+        "create": 2020-07-29T13:17:08.868+00:00,
+        "update": 2020-07-29T13:17:08.868+00:00,
+        "like": 12, 
         "creator" : ObjectId("5f5f3ea1e9522dfdab884f6b"),
         "comments" : [
                 {
                         "text" : "I like this post",
                         "author" : ObjectId("5f5f3ea1e9522dfdab884f6a"),
                         "like":1,
-                        create: 2020-07-29T13:17:40.868+00:00,
-                        update: 2020-07-29T13:17:40.868+00:00,
+                        "create": 2020-07-29T13:17:40.868+00:00,
+                        "update": 2020-07-29T13:17:40.868+00:00,
                 },
                 {
                         "text" : "Thank you",
                         "author" : ObjectId("5f5f3f52e9522dfdab884f6c"),
                         "like":2,
-                        create: 2020-07-29T13:17:49.868+00:00,
-                        update: 2020-07-29T13:17:49.868+00:00,
+                        "create": 2020-07-29T13:17:49.868+00:00,
+                        "update": 2020-07-29T13:17:49.868+00:00,
                 }
         ]
 }
