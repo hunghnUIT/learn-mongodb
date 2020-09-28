@@ -1,6 +1,6 @@
-#Basic Syntax of MongoDB
+# Basic Syntax of MongoDB
 
-##Structure
+## Structure
 *Assume we have a DB `blog` and collections `posts` and `comments` data structure look like:*
 
 ``` sql
@@ -35,7 +35,7 @@ posts {
 }
 ```
 ***
-##Create method
+## Create method
 * *Create many `posts`:*
 
 1. With `{ ordered: true }`:
@@ -63,7 +63,7 @@ db.posts.insertMany([
 and an *duplicate error* will still be raised but all posts which aren't duplicate are inserted. 
 ***
 
-##Read method.
+## Read method.
 
 * *To find all `posts`:*
 ``` SQL
@@ -184,7 +184,7 @@ will return the result looked like:
 * *A little note above is worth to keep in mind.*
 ***
 
-##Update method.
+## Update method.
 * *Update field's value:*
 ```sql
 db.posts.updateOne({_id: ObjectId("<id object>")}, {$set: {like: 2}})
@@ -266,7 +266,7 @@ db.collection.updateOne(
 ***NOTE:*** *If you work more on array, you should learn how to use arrayFilter*
 
 ***
-##Delete Method.
+## Delete Method.
 * *Removing documents with more than 2 conditions:*
 ```sql
 // remove many with conditions
@@ -277,7 +277,7 @@ db.collection.deleteMany(
 )
 ```
 
-##Advanced things.
+## Advanced things.
 * *Indexes in MongoDB:* 
 
 **Note 1:** Threshold for memory in MongoDB is 32 megabytes for sorting, in case of large documents, having `index` is a smart way to low the usage of memory for sorting because Mongo take all docs in it's own memory and sort elements in there. 
@@ -287,4 +287,4 @@ For example: Looking for a `post` with it's title, collection should be create `
 
 **Note 3:** Create `index` on every single field will give us super fast query but it costs much more time whenever insert/update documents due to the creation/update of `index` for every field in the document.
 
-**Note 4:** `index` are unique. If a field was nominated to be index, null/empty/not exist is still a value, which mean if two documents both having null/empty/not exist value for nominated field would raise a `duplicate error`
+**Note 4:** `index` are unique. If a field was nominated to be index, null/empty/not exist is still a value, which mean if two documents both having null/empty/not exist value for nominated field would raise a `duplicate error`.
