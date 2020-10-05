@@ -61,6 +61,23 @@ db.posts.insertMany([
 ```
 and an *duplicate error* will still be raised but all posts which aren't duplicate are inserted. 
 
+* *Options for inserting a `post`:*
+```sql
+db.posts.insertOne(
+        {"title" : "My second post!"},
+        {writeConcern: {
+                w: 1, 
+                j: true, 
+                wtimeout: 200
+        }
+})
+```
+Name | default value | Purpose
+-----|---------------|---------
+`w`    | `1`         |The w option requests acknowledgment that the write operation has propagated to a specified number of mongod instances or to mongod instances with specified tags. `{w: 0}` will not request acknowledgement.
+`j`    | `false` | Make sure insert task will be execute by push it into a todo list with `{j: true}`.
+`wtimeout`| `undefined`| Set timeout for insert executing action in millisecond.
+
 ## Read method.
 
 * *To find all `posts`:*
@@ -287,13 +304,15 @@ db.collection.deleteMany(
 ***Note 1:*** Threshold for memory in MongoDB is 32 megabytes for sorting, in case of large documents, having `index` is a smart way to low the usage of memory for sorting because Mongo take all docs in it's own memory and sort elements in there. 
 
 ***Note 2:*** Using `index` having lots of benefits such as the fastest way to query or helping to reduce the usage of memories indicated above. However, it's important to use `index` at the right time and in the right place. 
-For example: Looking for a `post` with it's title, collection should be create `index` with field `title` but looking for a `post` which having `create` before 07/29/2020 and having more than 10 `like` then `index` should be create on field `create`
+For example: Looking for a `post` with it's title, collection should be create `index` with field `title` but looking for a `post` which having `create` before 07/29/2020 and having more than 10 `like` then `index` should be create on field `create` or create with both field (*Note 6*)
 
 ***Note 3:*** Create `index` on every single field will give us super fast query but it costs much more time whenever insert/update documents due to the creation/update of `index` for every field in the document.
 
-***Note 4:*** if `index` are set to be unique. If a field was nominated to be index, null/empty/not exist is still a value, which mean if two documents both having null/empty/not exist value for *nominated field* would raise a `duplicate error`. But we can deal with this with `partialFilterExpression`.
+***Note 4:*** if `index` are set to be unique and the field which was being nominated to be `index`, null/empty/not exist is still a value, which mean if two documents both having null/empty/not exist value for *nominated field* would raise a `duplicate error`. But we can deal with this with `partialFilterExpression`.
+(This is `partial index`)
 ```sql
-// partialFilterExpression will check duplicate if the field indicated exists 
+// "partialFilterExpression" will check duplicate if the  indicated field 
+// is exists and having the same value (not value: null/undifined)
 db.post.createIndex(
         {email:1}, 
         {
@@ -302,7 +321,73 @@ db.post.createIndex(
                 }
         }
 )
+// To understand how this works, please read "note 7"
 ```
+
+***Note 5:*** If query return almost everything of the collection, `executionTimeMillis` of using `index` case will be greater than not using case because instead of return elements, pointers of the indexes are returned then another step have to 
+
+***Note 6:*** Create `index` with more than two field in a time will create `index` having all fields, not create two `index`, beside, *the order of fields **does** matter*. For example:
+(This was called `compound index`)
+```sql 
+// This will create index base on both "title" and "create"
+// and "indexName" of it is "title_1_create_1"
+db.post.createIndex({create: 1, title:1})
+/* Index would be like below due to the order of fields
+ Create: 10/20/2020 ---- Title: "Something"
+                    ---- Title: "That thing"
+                    ---- Title: "Those thing?"
+ Create: 10/21/2020 ---- Title: "Something 1"
+                    ---- Title: "That thing 2"
+                    ---- Title: "That thing 3"
+*/
+```
+
+***Note 7:*** With `partial index`, create a index with condition for the smaller size of `index` compare to `compound index` is absolutely possible. For example:
+```sql 
+// Create "index" for posts created after 7-29-2020
+// This will make lots of sense if you rarely need posts created before 7-29-2020
+// Smaller index, faster query
+// Below was called "partial index"
+db.post.createIndex(
+        {title:1}, 
+        {partialFilterExpression: {
+                create: {$gt: 2020-07-29T13:17:08.868+00:00}
+        }}
+)
+```
+*Remember that when `partial index` was created, the field was chosen for being `partial index` **need to be specified** in the query for index scanning (IXSCAN) unless it would be collumn scanning (COLLSCAN):*
+```sql 
+// find posts which title including "my" and created day after 7-29-2020
+db.post.find(
+        {title: {$regex : /my/i}},
+        {create: {$gt: 2020-07-29T13:17:08.868+00:00 }}
+)
+```
+
+
+***Note 8:*** Difference between `partial index` and `compound index`:
+Partial index|Compound index
+-------------|---------------
+The overall `index` simply smaller because values which not meet the conditions are not stored in there. => faster insert, update because they don't need to create `index`. | Create a general `index` for all indicated field result in many values of field(s) which is rarely needed still have `index`, then insert and update method will be more slower than `partial index`.
+
+***Note 9:*** Set Time To Live (TTL) with `index` is an useful thing needs to know:
+```sql 
+// Whenever a new post/document is inserted, TTL will be trigger
+// and delete that post/document after 1h from the created moment
+db.post.createIndex(
+        { "create": 1 }, 
+        { expireAfterSeconds: 3600 } 
+)
+
+//Insert posts, they will be delete automatic after 1h.
+db.post.insertMany([
+        {title: "Hey there", create: new Date()},
+        {title: "Hiiiiiiii dude", create: new Date()}
+])
+```
+***Note 10:*** With an `index` on a array field, MongoDB will pull out all elements of that array and give indexes to them as separated document. This is `multi-key index`. 
+Then *create a multi-key index with two array will raise error:*
+> That mean you create index with every document in  array1 and with each document in array1 you will create index with all documents of array2, like O(n^2) of complexity. - Some trainer of an online MongoDB course.
 
 ## Explain() method.
 * *"queryPlanner":* Show summary for the Executed Query and Winning plan 
